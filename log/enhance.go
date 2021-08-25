@@ -1,4 +1,4 @@
-package deferlog
+package log
 
 import (
 	"github.com/rs/zerolog"

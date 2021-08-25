@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
+	logEnhance "github.com/wweir/deferlog/log"
 )
 
 var StructLogger = zerolog.New(os.Stdout).
@@ -36,16 +36,12 @@ func init() {
 
 	if ok, _ := strconv.ParseBool(os.Getenv("DEBUG")); ok {
 		SetDefaultLogger(ConsoleLogger, 1, zerolog.DebugLevel)
-
-	} else if fi, _ := os.Stdout.Stat(); (fi.Mode() & os.ModeCharDevice) == 0 {
-		SetDefaultLogger(StructLogger, 1, zerolog.InfoLevel)
-
 	} else {
 		SetDefaultLogger(ConsoleLogger, 1, zerolog.InfoLevel)
 	}
 }
 
 func SetDefaultLogger(logger zerolog.Logger, deferSkip int, logLevel zerolog.Level) {
-	log.Logger = logger.With().Caller().Logger().Level(logLevel)
+	logEnhance.Logger = logger.With().Caller().Logger().Level(logLevel)
 	Logger = logger.With().CallerWithSkipFrameCount(deferSkip + 2).Logger().Level(logLevel)
 }

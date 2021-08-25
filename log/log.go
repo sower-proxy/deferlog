@@ -1,5 +1,5 @@
-// Package deferlog is a copy of zerolog/log/log.go for log in defer
-package deferlog
+// Package log provides a global logger for zerolog.
+package log
 
 import (
 	"context"
