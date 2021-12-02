@@ -15,30 +15,43 @@ var StructLogger = zerolog.New(os.Stdout).
 	With().Timestamp().CallerWithSkipFrameCount(3).Stack().
 	Logger().Level(zerolog.InfoLevel)
 
-var ConsoleLogger = zerolog.New(zerolog.ConsoleWriter{
-	Out:        os.Stdout,
-	TimeFormat: time.StampMilli,
-	FormatCaller: func(i interface{}) string {
-		if caller, ok := i.(string); ok {
-			return ShortCaller(caller)
-		}
-		return ""
-	},
-}).
+var ConsoleLogger = zerolog.New(
+	zerolog.ConsoleWriter{
+		Out:        os.Stdout,
+		TimeFormat: time.StampMilli,
+		FormatCaller: func(i interface{}) string {
+			if caller, ok := i.(string); ok {
+				return ShortCaller(caller)
+			}
+			return ""
+		},
+	}).
 	With().Timestamp().CallerWithSkipFrameCount(3).Stack().
 	Logger().Level(zerolog.InfoLevel)
 
 func init() {
+	pool := make(chan *fmtState, 1)
 	zerolog.ErrorStackMarshaler = func(err error) interface{} {
 		if formater, ok := err.(interface {
 			Format(fmt.State, rune)
 		}); ok {
-			fmtState := &fmtState{}
-			formater.Format(fmtState, 'v')
+			var state *fmtState
+			select {
+			case state = <-pool:
+				state.Reset()
+			default:
+				state = new(fmtState)
+			}
 
-			_, _ = fmtState.ReadString(os.PathSeparator)
-			line, _ := fmtState.ReadString('\n')
-			return ShortCaller(line)
+			formater.Format(state, 'v')
+			_, _ = state.ReadString(os.PathSeparator)
+			caller, _ := state.ReadString('\n')
+
+			select {
+			case pool <- state:
+			default:
+			}
+			return ShortCaller(caller)
 		}
 		return nil
 	}
@@ -48,6 +61,7 @@ func init() {
 	} else {
 		Logger = ConsoleLogger
 	}
+
 	if ok, _ := strconv.ParseBool(os.Getenv("DEBUG")); ok {
 		Logger = Logger.Level(zerolog.DebugLevel)
 	}
