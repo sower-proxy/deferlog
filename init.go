@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,17 +19,15 @@ var ConsoleLogger = zerolog.New(
 	zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		TimeFormat: time.StampMilli,
-		FormatCaller: func(i interface{}) string {
-			if caller, ok := i.(string); ok {
-				return ShortCaller(caller)
-			}
-			return ""
-		},
 	}).
 	With().Timestamp().CallerWithSkipFrameCount(3).Stack().
 	Logger()
 
 func init() {
+	zerolog.CallerMarshalFunc = func(file string, line int) string {
+		return ShortCaller(file) + ":" + strconv.Itoa(line)
+	}
+
 	pool := make(chan *fmtState, 1)
 	zerolog.ErrorStackMarshaler = func(err error) interface{} {
 		if formater, ok := err.(interface {
