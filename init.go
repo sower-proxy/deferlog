@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -13,7 +12,7 @@ import (
 
 var StructLogger = zerolog.New(os.Stdout).
 	With().Timestamp().CallerWithSkipFrameCount(3).Stack().
-	Logger().Level(zerolog.InfoLevel)
+	Logger()
 
 var ConsoleLogger = zerolog.New(
 	zerolog.ConsoleWriter{
@@ -27,7 +26,7 @@ var ConsoleLogger = zerolog.New(
 		},
 	}).
 	With().Timestamp().CallerWithSkipFrameCount(3).Stack().
-	Logger().Level(zerolog.InfoLevel)
+	Logger()
 
 func init() {
 	pool := make(chan *fmtState, 1)
@@ -62,8 +61,19 @@ func init() {
 		Logger = ConsoleLogger
 	}
 
-	if ok, _ := strconv.ParseBool(os.Getenv("DEBUG")); ok {
-		Logger = Logger.Level(zerolog.DebugLevel)
+	switch os.Getenv("LOG_LEVEL") {
+	case "TRACE", "Trace", "trace":
+		Logger.Level(zerolog.TraceLevel)
+	case "DEBUG", "Debug", "debug":
+		Logger.Level(zerolog.DebugLevel)
+	case "INFO", "Info", "info":
+		Logger.Level(zerolog.InfoLevel)
+	case "WARN", "Warn", "warn":
+		Logger.Level(zerolog.WarnLevel)
+	case "ERROR", "Error", "error":
+		Logger.Level(zerolog.ErrorLevel)
+	default:
+		Logger.Level(zerolog.InfoLevel)
 	}
 }
 
