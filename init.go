@@ -63,17 +63,17 @@ func init() {
 
 	switch os.Getenv("LOG_LEVEL") {
 	case "TRACE", "Trace", "trace":
-		Logger.Level(zerolog.TraceLevel)
+		Logger = Logger.Level(zerolog.TraceLevel)
 	case "DEBUG", "Debug", "debug":
-		Logger.Level(zerolog.DebugLevel)
+		Logger = Logger.Level(zerolog.DebugLevel)
 	case "INFO", "Info", "info":
-		Logger.Level(zerolog.InfoLevel)
+		Logger = Logger.Level(zerolog.InfoLevel)
 	case "WARN", "Warn", "warn":
-		Logger.Level(zerolog.WarnLevel)
+		Logger = Logger.Level(zerolog.WarnLevel)
 	case "ERROR", "Error", "error":
-		Logger.Level(zerolog.ErrorLevel)
+		Logger = Logger.Level(zerolog.ErrorLevel)
 	default:
-		Logger.Level(zerolog.InfoLevel)
+		Logger = Logger.Level(zerolog.InfoLevel)
 	}
 }
 
