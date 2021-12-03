@@ -2,7 +2,12 @@ package log
 
 import (
 	"github.com/rs/zerolog"
+	"github.com/wweir/deferlog"
 )
+
+func init() {
+	Logger = deferlog.StdLogger
+}
 
 func InfoWarn(err error) *zerolog.Event {
 	if err != nil {

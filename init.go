@@ -12,16 +12,14 @@ import (
 )
 
 var StructLogger = zerolog.New(os.Stdout).
-	With().Timestamp().CallerWithSkipFrameCount(3).Stack().
-	Logger()
-
+	With().Timestamp().Stack().Logger()
 var ConsoleLogger = zerolog.New(
 	zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		TimeFormat: time.StampMilli,
 	}).
-	With().Timestamp().CallerWithSkipFrameCount(3).Stack().
-	Logger()
+	With().Timestamp().Stack().Logger()
+var StdLogger zerolog.Logger
 
 func init() {
 	zerolog.CallerMarshalFunc = func(file string, line int) string {
@@ -74,6 +72,9 @@ func init() {
 	default:
 		Logger = Logger.Level(zerolog.InfoLevel)
 	}
+
+	StdLogger = Logger.With().Caller().Logger()
+	Logger = Logger.With().CallerWithSkipFrameCount(3).Logger()
 }
 
 type fmtState struct {
