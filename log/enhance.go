@@ -2,7 +2,7 @@ package log
 
 import (
 	"github.com/rs/zerolog"
-	"github.com/wweir/deferlog"
+	"github.com/sower-proxy/deferlog"
 )
 
 func init() {

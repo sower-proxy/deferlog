@@ -1,4 +1,4 @@
-module github.com/wweir/deferlog
+module github.com/sower-proxy/deferlog
 
 go 1.17
 
