@@ -22,6 +22,7 @@ var ConsoleLogger = zerolog.New(
 var StdLogger zerolog.Logger
 
 func init() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
 	zerolog.CallerMarshalFunc = func(file string, line int) string {
 		return ShortCaller(file) + ":" + strconv.Itoa(line)
 	}
