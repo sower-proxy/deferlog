@@ -22,7 +22,6 @@ var ConsoleLogger = zerolog.New(
 var StdLogger zerolog.Logger
 
 func init() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
 	zerolog.CallerMarshalFunc = func(file string, line int) string {
 		return ShortCaller(file) + ":" + strconv.Itoa(line)
 	}
@@ -56,6 +55,7 @@ func init() {
 	if fi, _ := os.Stdout.Stat(); (fi.Mode() & os.ModeCharDevice) == 0 {
 		Logger = StructLogger
 	} else {
+		zerolog.TimeFieldFormat = time.StampMilli
 		Logger = ConsoleLogger
 	}
 
