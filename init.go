@@ -11,14 +11,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var StructLogger = zerolog.New(os.Stdout).
-	With().Timestamp().Stack().Logger()
-var ConsoleLogger = zerolog.New(
-	zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: time.StampMilli,
-	}).
-	With().Timestamp().Stack().Logger()
 var StdLogger zerolog.Logger
 
 func init() {
@@ -52,30 +44,33 @@ func init() {
 		return nil
 	}
 
-	if fi, _ := os.Stdout.Stat(); (fi.Mode() & os.ModeCharDevice) == 0 {
-		Logger = StructLogger
-	} else {
-		zerolog.TimeFieldFormat = time.StampMilli
-		Logger = ConsoleLogger
-	}
-
+	level := zerolog.InfoLevel
 	switch os.Getenv("LOG_LEVEL") {
 	case "TRACE", "Trace", "trace":
-		Logger = Logger.Level(zerolog.TraceLevel)
+		level = zerolog.TraceLevel
 	case "DEBUG", "Debug", "debug":
-		Logger = Logger.Level(zerolog.DebugLevel)
+		level = zerolog.DebugLevel
 	case "INFO", "Info", "info":
-		Logger = Logger.Level(zerolog.InfoLevel)
+		level = zerolog.InfoLevel
 	case "WARN", "Warn", "warn":
-		Logger = Logger.Level(zerolog.WarnLevel)
+		level = zerolog.WarnLevel
 	case "ERROR", "Error", "error":
-		Logger = Logger.Level(zerolog.ErrorLevel)
-	default:
-		Logger = Logger.Level(zerolog.InfoLevel)
+		level = zerolog.ErrorLevel
 	}
 
-	StdLogger = Logger.With().Caller().Logger()
-	Logger = Logger.With().CallerWithSkipFrameCount(3).Logger()
+	writer := zerolog.ConsoleWriter{
+		Out:        os.Stderr,
+		TimeFormat: time.StampMilli,
+	}
+	if fi, _ := os.Stdout.Stat(); (fi.Mode() & os.ModeCharDevice) == 0 {
+		writer.NoColor = true
+		writer.Out = os.Stdout
+	}
+
+	StdLogger = zerolog.New(writer).Level(level).
+		With().Timestamp().Stack().Caller().Logger()
+	Logger = zerolog.New(writer).Level(level).
+		With().Timestamp().Stack().CallerWithSkipFrameCount(3).Logger()
 }
 
 type fmtState struct {
