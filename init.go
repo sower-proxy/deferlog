@@ -14,7 +14,7 @@ import (
 var StdLogger zerolog.Logger
 
 func init() {
-	zerolog.CallerMarshalFunc = func(file string, line int) string {
+	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
 		return ShortCaller(file) + ":" + strconv.Itoa(line)
 	}
 
