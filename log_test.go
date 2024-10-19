@@ -1,14 +1,13 @@
-// Package log provides a global logger for zerolog.
 package deferlog_test
 
 import (
 	"log/slog"
 
-	"github.com/sower-proxy/deferlog"
+	"github.com/sower-proxy/deferlog/v2"
 )
 
 func ExampleInfo() {
-	deferlog.SetDefault(slog.Default())
+	// deferlog.SetDefault(slog.Default())
 
 	defer func() {
 		deferlog.Info("hello world")
