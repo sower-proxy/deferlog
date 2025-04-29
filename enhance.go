@@ -8,29 +8,33 @@ import (
 func InfoWarn(err error, msg string, args ...any) {
 	if err != nil {
 		Default().Warn(msg, append(args, "err", err)...)
+	} else {
+		Default().Info(msg, args...)
 	}
-	Default().Info(msg, args...)
 }
 
 func InfoWarnContext(ctx context.Context, err error, msg string, args ...any) {
 	if err != nil {
 		Default().WarnContext(ctx, msg, append(args, "err", err)...)
+	} else {
+		Default().InfoContext(ctx, msg, args...)
 	}
-	Default().InfoContext(ctx, msg, args...)
 }
 
 func InfoError(err error, msg string, args ...any) {
 	if err != nil {
 		Default().Error(msg, append(args, "err", err)...)
+	} else {
+		Default().Info(msg, args...)
 	}
-	Default().Info(msg, args...)
 }
 
 func InfoErrorContext(ctx context.Context, err error, msg string, args ...any) {
 	if err != nil {
 		Default().ErrorContext(ctx, msg, append(args, "err", err)...)
+	} else {
+		Default().InfoContext(ctx, msg, args...)
 	}
-	Default().InfoContext(ctx, msg, args...)
 }
 
 func InfoFatal(err error, msg string, args ...any) {
@@ -52,29 +56,33 @@ func InfoFatalContext(ctx context.Context, err error, msg string, args ...any) {
 func DebugWarn(err error, msg string, args ...any) {
 	if err != nil {
 		Default().Warn(msg, append(args, "err", err)...)
+	} else {
+		Default().Debug(msg, args...)
 	}
-	Default().Debug(msg, args...)
 }
 
 func DebugWarnContext(ctx context.Context, err error, msg string, args ...any) {
 	if err != nil {
 		Default().WarnContext(ctx, msg, append(args, "err", err)...)
+	} else {
+		Default().DebugContext(ctx, msg, args...)
 	}
-	Default().DebugContext(ctx, msg, args...)
 }
 
 func DebugError(err error, msg string, args ...any) {
 	if err != nil {
 		Default().Error(msg, append(args, "err", err)...)
+	} else {
+		Default().Debug(msg, args...)
 	}
-	Default().Debug(msg, args...)
 }
 
 func DebugErrorContext(ctx context.Context, err error, msg string, args ...any) {
 	if err != nil {
 		Default().ErrorContext(ctx, msg, append(args, "err", err)...)
+	} else {
+		Default().DebugContext(ctx, msg, args...)
 	}
-	Default().DebugContext(ctx, msg, args...)
 }
 
 func DebugFatal(err error, msg string, args ...any) {
