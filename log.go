@@ -2,20 +2,19 @@ package deferlog
 
 import (
 	"context"
-	"log"
 	"log/slog"
+	"os"
 	"sync/atomic"
 )
 
 var defaultLogger atomic.Pointer[slog.Logger]
 
-func init() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	defaultLogger.Store(slog.New(&DeferWrap{Handler: slog.Default().Handler(), Skip: 6}))
+func Default() (l *slog.Logger) {
+	if l = defaultLogger.Load(); l == nil {
+		SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
+	}
+	return defaultLogger.Load()
 }
-
-// Default returns the default [Logger].
-func Default() *slog.Logger { return defaultLogger.Load() }
 
 // SetDefault makes l the default [Logger], which is used by
 // the top-level functions [Info], [Debug] and so on.
@@ -23,8 +22,17 @@ func Default() *slog.Logger { return defaultLogger.Load() }
 // (as with [log.Print], etc.) will be logged using l's Handler,
 // at a level controlled by [SetLogLoggerLevel].
 func SetDefault(l *slog.Logger) {
-	slog.SetDefault(l)
-	defaultLogger.Store(slog.New(&DeferWrap{Handler: l.Handler(), Skip: 6}))
+	if l == nil {
+		panic("deferlog: SetDefault(nil)")
+	}
+
+	h := l.Handler()
+	if dw, ok := h.(*DeferWrap); ok {
+		h = dw.Handler
+	}
+
+	slog.SetDefault(slog.New(NewDeferWrap(l.Handler(), 4)))
+	defaultLogger.Store(slog.New(NewDeferWrap(l.Handler(), 6)))
 }
 
 // Debug calls [Logger.Debug] on the default logger.
