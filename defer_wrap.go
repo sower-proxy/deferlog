@@ -6,32 +6,37 @@ import (
 	"runtime"
 )
 
+type CtxKey string
+
+var AutoLogCtxKeys []CtxKey
+
 type DeferWrap struct {
 	slog.Handler
-
-	Skip int
+	skip int
 }
 
 func NewDeferWrap(handler slog.Handler, skip int) *DeferWrap {
-	return &DeferWrap{
-		Handler: handler,
-		Skip:    skip,
-	}
+	return &DeferWrap{Handler: handler, skip: skip}
 }
 
-var AutoLogCtxKeys []string
-
 func (dw *DeferWrap) Handle(ctx context.Context, r slog.Record) error {
-	attrs := make([]slog.Attr, 0, len(AutoLogCtxKeys))
-	for _, key := range AutoLogCtxKeys {
-		if val := ctx.Value(key); val != nil {
-			attrs = append(attrs, slog.Any(key, val))
+	if len(AutoLogCtxKeys) > 0 {
+		attrs := make([]slog.Attr, 0, len(AutoLogCtxKeys))
+		for _, key := range AutoLogCtxKeys {
+			if val := ctx.Value(key); val != nil {
+				attrs = append(attrs, slog.Any(string(key), val))
+			}
+		}
+		if len(attrs) > 0 {
+			r.AddAttrs(attrs...)
 		}
 	}
-	r.AddAttrs(attrs...)
 
-	pcs := [1]uintptr{r.PC}
-	runtime.Callers(dw.Skip, pcs[:])
-	r.PC = pcs[0]
+	if dw.skip > 0 {
+		var pcs [1]uintptr
+		runtime.Callers(dw.skip, pcs[:])
+		r.PC = pcs[0]
+	}
+
 	return dw.Handler.Handle(ctx, r)
 }
