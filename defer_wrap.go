@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"runtime"
+	"slices"
 )
 
 type CtxKey string
@@ -32,11 +33,22 @@ func (dw *DeferWrap) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	if dw.skip > 0 {
-		var pcs [1]uintptr
-		runtime.Callers(dw.skip, pcs[:])
-		r.PC = pcs[0]
-	}
+	var pcs [1]uintptr
+	runtime.Callers(dw.skip, pcs[:])
+	r.PC = pcs[0]
 
 	return dw.Handler.Handle(ctx, r)
+}
+
+// CtxWithLogField wraps the context with a key-value pair and automatically
+// adds the key to AutoLogCtxKeys if it's not already present.
+func CtxWithLogField(ctx context.Context, key string, value any) context.Context {
+	ctxKey := CtxKey(key)
+
+	// Add key to AutoLogCtxKeys if not found
+	if found := slices.Contains(AutoLogCtxKeys, ctxKey); !found {
+		AutoLogCtxKeys = append(AutoLogCtxKeys, ctxKey)
+	}
+
+	return context.WithValue(ctx, ctxKey, value)
 }

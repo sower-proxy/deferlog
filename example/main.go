@@ -9,14 +9,13 @@ import (
 )
 
 func main() {
-	deferlog.AutoLogCtxKeys = []deferlog.CtxKey{"trace_id", "span_id"}
 	deferlog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		AddSource: true,
 	})))
 
 	ctx := context.Background()
 	defer func() {
-		ctx := context.WithValue(ctx, deferlog.CtxKey("trace_id"), "I_am_Trace")
+		ctx = deferlog.CtxWithLogField(ctx, "trace_id", "I_am_Trace")
 		deferlog.InfoContext(ctx, "hello world")
 		slog.InfoContext(ctx, "hello world")
 	}()
