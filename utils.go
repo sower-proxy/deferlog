@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -16,34 +17,69 @@ func (s Secret) String() string               { return "***" }
 func (s Secret) GoString() string             { return "***" }
 func (s Secret) MarshalText() ([]byte, error) { return []byte("***"), nil }
 
-// Password stores a password in plain form internally, accepts plain text or
-// base64-encoded input, and keeps fmt output redacted.
+// Password stores a password in plain form internally and keeps fmt output
+// redacted.
 //
-// Text/JSON marshaling intentionally emits the base64 form for transport or
-// config storage, so structured loggers that honor MarshalText/MarshalJSON will
-// serialize the encoded value instead of "***".
+// Input is always taken verbatim unless it carries the explicit "b64:"
+// prefix, which decodes the following canonical base64. There is no guessing:
+// a plain value that happens to be valid canonical base64 (e.g. "fnhkwfnh")
+// stays byte-for-byte, so it can never be silently corrupted.
+//
+// Text/JSON marshaling emits the "b64:" prefixed form for transport or
+// config storage, making marshal/unmarshal round-trips exact. Structured
+// loggers that honor MarshalText/MarshalJSON serialize the encoded value
+// instead of "***" (and never the plaintext).
 type Password string
+
+const passwordBase64Prefix = "b64:"
 
 func (p Password) Value() string                { return string(p) }
 func (p Password) String() string               { return "***" }
 func (p Password) GoString() string             { return "***" }
-func (p Password) MarshalText() ([]byte, error) { return []byte(p.Base64()), nil }
+func (p Password) MarshalText() ([]byte, error) { return []byte(passwordBase64Prefix + p.Base64()), nil }
 func (p Password) MarshalBinary() ([]byte, error) {
 	return p.MarshalText()
 }
 func (p Password) MarshalJSON() ([]byte, error) {
-	return json.Marshal(p.Base64())
+	return json.Marshal(passwordBase64Prefix + p.Base64())
 }
-func (p Password) Base64() string       { return base64.StdEncoding.EncodeToString([]byte(p)) }
+func (p Password) Base64() string { return base64.StdEncoding.EncodeToString([]byte(p)) }
+
+// NewPassword wraps a value verbatim.
 func NewPassword(value string) Password { return Password(value) }
 
-// ParsePassword is a convenience helper for config-style inputs that may be
-// plain text or canonical base64. Because it uses a heuristic, plain values
-// that are themselves valid canonical base64 will be decoded; use NewPassword
-// when the input must be preserved verbatim.
-func ParsePassword(value string) Password { return Password(decodeBase64OrPlain(value)) }
+// ParsePassword interprets a config-style input: a "b64:"-prefixed value is
+// decoded, anything else is kept verbatim. Malformed base64 after the prefix
+// falls back to the input as written, so the value is never silently lost;
+// strict validation is available through UnmarshalText, which returns an
+// error instead.
+func ParsePassword(value string) Password {
+	if decoded, err := decodePasswordInput(value); err == nil {
+		return decoded
+	}
+	return Password(value)
+}
+
+// decodePasswordInput decodes the explicit "b64:" form. Any other input is
+// verbatim. A "b64:" prefix with malformed base64 is an error, never a
+// silent fallback, so a typo surfaces instead of becoming a wrong password.
+func decodePasswordInput(value string) (Password, error) {
+	if !strings.HasPrefix(value, passwordBase64Prefix) {
+		return Password(value), nil
+	}
+	decoded, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(value, passwordBase64Prefix))
+	if err != nil {
+		return "", fmt.Errorf("deferlog: invalid b64 password: %w", err)
+	}
+	return Password(decoded), nil
+}
+
 func (p *Password) UnmarshalText(text []byte) error {
-	*p = Password(decodeBase64OrPlain(string(text)))
+	decoded, err := decodePasswordInput(string(text))
+	if err != nil {
+		return err
+	}
+	*p = decoded
 	return nil
 }
 func (p *Password) UnmarshalBinary(data []byte) error {
@@ -60,17 +96,6 @@ func (p *Password) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("deferlog: password must be a JSON string or null: %w", err)
 	}
 	return p.UnmarshalText([]byte(value))
-}
-
-// decodeBase64OrPlain treats canonical base64 as encoded data and falls back to
-// the original string otherwise. This is intended for operator-provided config
-// values, not arbitrary user input.
-func decodeBase64OrPlain(value string) string {
-	decoded, err := base64.StdEncoding.DecodeString(value)
-	if err != nil || base64.StdEncoding.EncodeToString(decoded) != value {
-		return value
-	}
-	return string(decoded)
 }
 
 // Throttle gates log emissions by time interval and/or occurrence count.
